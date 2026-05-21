@@ -89,7 +89,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
 
   if (is.null(result)) return(invisible(NULL))
 
-  if (length(result$hits) == 0) {
+  if (is.null(result$hits) || length(result$hits) == 0) {
     cat("Error: Gene '", gene, "' not found. Please check the gene symbol and try again.\n", sep="")
     return(invisible(NULL))
   }
@@ -99,16 +99,20 @@ findr <- function(gene, disease = NULL, site = NULL) {
   entrez_id <- as.integer(hit$entrezgene)
   official_symbol <- hit$symbol
 
-  if (hit$type_of_gene == "biological-region") {
+  if (!is.null(hit$type_of_gene) && hit$type_of_gene == "biological-region") {
     cat("Warning: '", gene, "' returned a biological region, not a gene. Try the official gene symbol instead.\n", sep="")
     return(invisible(NULL))
   }
 
   # query Human Protein Atlas
   hpa_url <- paste0("https://www.proteinatlas.org/api/search_download.php?search=", gene, "&format=json&columns=g,eg,up,pe,ab,rnacancertype&compress=no")
-  hpa_response <- httr2::request(hpa_url) |> httr2::req_perform()
-  hpa_result <- httr2::resp_body_json(hpa_response)
-  hpa <- if (length(hpa_result) > 0) hpa_result[[1]] else NULL
+  hpa <- tryCatch({
+    hpa_response <- httr2::request(hpa_url) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
+    hpa_result <- httr2::resp_body_json(hpa_response)
+    if (length(hpa_result) > 0) hpa_result[[1]] else NULL
+  }, error = function(e) NULL)
 
   # query UniProt
   mol_weight <- NULL
@@ -118,25 +122,29 @@ findr <- function(gene, disease = NULL, site = NULL) {
   if (!is.null(hpa) && !is.null(hpa$Uniprot[[1]])) {
     uniprot_id <- hpa$Uniprot[[1]]
     uniprot_url <- paste0("https://rest.uniprot.org/uniprotkb/", uniprot_id, "?format=json")
-    uniprot_response <- httr2::request(uniprot_url) |> httr2::req_perform()
-    uniprot_result <- httr2::resp_body_json(uniprot_response)
-    mol_weight <- uniprot_result$sequence$molWeight
-    loc <- Filter(function(x) x$commentType == "SUBCELLULAR LOCATION", uniprot_result$comments)
-    if (length(loc) > 0) {
-      all_locs <- unlist(lapply(loc, function(l)
-        sapply(l$subcellularLocations, function(x) x$location$value)
-      ))
-      base_locs <- unique(trimws(unlist(strsplit(all_locs, ","))))
-      subcell_loc <- paste(unique(base_locs), collapse = ", ")
-    }
-    alt <- Filter(function(x) x$commentType == "ALTERNATIVE PRODUCTS", uniprot_result$comments)
-    if (length(alt) > 0) {
-      isoform_count <- length(alt[[1]]$isoforms)
-      raw_names <- sapply(alt[[1]]$isoforms, function(x) {
-        if (length(x$synonyms) > 0) x$synonyms[[1]]$value else x$name$value
-      })
-      isoform_names <- raw_names[!grepl("^[0-9]+$", raw_names) & !grepl("^[A-Z0-9]{5,}$", raw_names)]
-    }
+    tryCatch({
+      uniprot_response <- httr2::request(uniprot_url) |>
+        httr2::req_timeout(15) |>
+        httr2::req_perform()
+      uniprot_result <- httr2::resp_body_json(uniprot_response)
+      mol_weight <- uniprot_result$sequence$molWeight
+      loc <- Filter(function(x) x$commentType == "SUBCELLULAR LOCATION", uniprot_result$comments)
+      if (length(loc) > 0) {
+        all_locs <- unlist(lapply(loc, function(l)
+          sapply(l$subcellularLocations, function(x) x$location$value)
+        ))
+        base_locs <- unique(trimws(unlist(strsplit(all_locs, ","))))
+        subcell_loc <- paste(unique(base_locs), collapse = ", ")
+      }
+      alt <- Filter(function(x) x$commentType == "ALTERNATIVE PRODUCTS", uniprot_result$comments)
+      if (length(alt) > 0) {
+        isoform_count <- length(alt[[1]]$isoforms)
+        raw_names <- sapply(alt[[1]]$isoforms, function(x) {
+          if (length(x$synonyms) > 0) x$synonyms[[1]]$value else x$name$value
+        })
+        isoform_names <- raw_names[!grepl("^[0-9]+$", raw_names) & !grepl("^[A-Z0-9]{5,}$", raw_names)]
+      }
+    }, error = function(e) NULL)
   }
 
   # query GTEx
@@ -163,15 +171,18 @@ findr <- function(gene, disease = NULL, site = NULL) {
   if (!is.null(tcga_study) && !is.null(entrez_id)) {
     tryCatch({
       sample_url <- paste0("https://www.cbioportal.org/api/sample-lists/", tcga_study, "_all")
-      sample_resp <- httr2::request(sample_url) |> httr2::req_perform()
+      sample_resp <- httr2::request(sample_url) |>
+        httr2::req_timeout(15) |>
+        httr2::req_perform()
       total_samples <- httr2::resp_body_json(sample_resp)$sampleCount
       mut_url <- paste0("https://www.cbioportal.org/api/molecular-profiles/", tcga_study, "_mutations/mutations?sampleListId=", tcga_study, "_all&entrezGeneId=", entrez_id, "&pageSize=10000")
-      mut_resp <- httr2::request(mut_url) |> httr2::req_perform()
+      mut_resp <- httr2::request(mut_url) |>
+        httr2::req_timeout(30) |>
+        httr2::req_perform()
       mut_count <- length(httr2::resp_body_json(mut_resp))
       mut_frequency <- round(mut_count / total_samples * 100, 1)
     }, error = function(e) NULL)
   }
-
 
   # query PubMed
   pubmed_total <- NULL
@@ -179,7 +190,9 @@ findr <- function(gene, disease = NULL, site = NULL) {
 
   pubmed_total <- tryCatch({
     total_url <- paste0("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=", gene, "&retmode=json&retmax=0")
-    total_resp <- httr2::request(total_url) |> httr2::req_perform()
+    total_resp <- httr2::request(total_url) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
     as.integer(httr2::resp_body_json(total_resp)$esearchresult$count)
   }, error = function(e) NULL)
 
@@ -188,7 +201,9 @@ findr <- function(gene, disease = NULL, site = NULL) {
   if (!is.null(context_label)) {
     pubmed_context <- tryCatch({
       context_url <- paste0("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=", gene, "+", gsub(" ", "+", context_label), "&retmode=json&retmax=0")
-      context_resp <- httr2::request(context_url) |> httr2::req_perform()
+      context_resp <- httr2::request(context_url) |>
+        httr2::req_timeout(15) |>
+        httr2::req_perform()
       as.integer(httr2::resp_body_json(context_resp)$esearchresult$count)
     }, error = function(e) NULL)
   }
@@ -196,21 +211,21 @@ findr <- function(gene, disease = NULL, site = NULL) {
   # query ClinVar
   clinvar_pathogenic <- tryCatch({
     path_url <- paste0("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term=", official_symbol, "[gene]+pathogenic[clinical_significance]&retmode=json&retmax=0")
-    as.integer(httr2::resp_body_json(httr2::req_perform(httr2::request(path_url)))$esearchresult$count)
+    as.integer(httr2::resp_body_json(httr2::req_perform(httr2::request(path_url) |> httr2::req_timeout(15)))$esearchresult$count)
   }, error = function(e) NULL)
 
   Sys.sleep(0.5)
 
   clinvar_benign <- tryCatch({
     ben_url <- paste0("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term=", official_symbol, "[gene]+benign[clinical_significance]&retmode=json&retmax=0")
-    as.integer(httr2::resp_body_json(httr2::req_perform(httr2::request(ben_url)))$esearchresult$count)
+    as.integer(httr2::resp_body_json(httr2::req_perform(httr2::request(ben_url) |> httr2::req_timeout(15)))$esearchresult$count)
   }, error = function(e) NULL)
 
   Sys.sleep(0.5)
 
   clinvar_vus <- tryCatch({
     vus_url <- paste0("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term=", official_symbol, "[gene]+%22uncertain+significance%22&retmode=json&retmax=0")
-    as.integer(httr2::resp_body_json(httr2::req_perform(httr2::request(vus_url)))$esearchresult$count)
+    as.integer(httr2::resp_body_json(httr2::req_perform(httr2::request(vus_url) |> httr2::req_timeout(15)))$esearchresult$count)
   }, error = function(e) NULL)
 
   # print basic info
@@ -254,21 +269,29 @@ findr <- function(gene, disease = NULL, site = NULL) {
         }
       }
     }')
-    ot_response <- httr2::request("https://api.platform.opentargets.org/api/v4/graphql") |>
-      httr2::req_body_json(list(query = query)) |>
-      httr2::req_perform()
-    ot_result <- httr2::resp_body_json(ot_response)
-    rows <- ot_result$data$target$associatedDiseases$rows
-    matches <- Filter(function(r) {
-      any(sapply(search_terms, function(term) grepl(term, r$disease$name, ignore.case = TRUE)))
-    }, rows)
-    if (length(matches) > 0) {
-      assoc_score <- round(matches[[1]]$score, 3)
-      assoc_disease <- matches[[1]]$disease$name
-      cat("Association score:", assoc_score, "\n")
-      cat("Matched disease:", assoc_disease, "\n")
+    ot_result <- tryCatch({
+      ot_response <- httr2::request("https://api.platform.opentargets.org/api/v4/graphql") |>
+        httr2::req_body_json(list(query = query)) |>
+        httr2::req_timeout(15) |>
+        httr2::req_perform()
+      httr2::resp_body_json(ot_response)
+    }, error = function(e) NULL)
+
+    if (!is.null(ot_result)) {
+      rows <- ot_result$data$target$associatedDiseases$rows
+      matches <- Filter(function(r) {
+        any(sapply(search_terms, function(term) grepl(term, r$disease$name, ignore.case = TRUE)))
+      }, rows)
+      if (length(matches) > 0) {
+        assoc_score <- round(matches[[1]]$score, 3)
+        assoc_disease <- matches[[1]]$disease$name
+        cat("Association score:", assoc_score, "\n")
+        cat("Matched disease:", assoc_disease, "\n")
+      } else {
+        cat("No direct association found for '", context_label, "' in top results\n")
+      }
     } else {
-      cat("No direct association found for '", context_label, "' in top results\n")
+      cat("Open Targets data not available\n")
     }
   }
 
@@ -353,7 +376,6 @@ findr <- function(gene, disease = NULL, site = NULL) {
 #' \dontrun{
 #' findr_multi(c("TP53", "BRCA1"), site = "breast")
 #' }
-
 findr_multi <- function(genes, disease = NULL, site = NULL, output = "print") {
   results <- list()
   for (gene in genes) {
@@ -401,8 +423,15 @@ findr_context_only <- function(gene, site) {
 
   # get entrez and ensembl
   url <- paste0("https://mygene.info/v3/query?q=", gene, "&fields=ensembl.gene,entrezgene&species=human")
-  response <- httr2::request(url) |> httr2::req_perform()
-  result <- httr2::resp_body_json(response)
+  result <- tryCatch({
+    response <- httr2::request(url) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
+    httr2::resp_body_json(response)
+  }, error = function(e) NULL)
+
+  if (is.null(result)) return(invisible(NULL))
+
   hit <- result$hits[[1]]
   ensembl_id <- hit$ensembl$gene
   entrez_id <- as.integer(hit$entrezgene)
@@ -418,28 +447,36 @@ findr_context_only <- function(gene, site) {
         }
       }
     }')
-  ot_response <- httr2::request("https://api.platform.opentargets.org/api/v4/graphql") |>
-    httr2::req_body_json(list(query = query)) |>
-    httr2::req_perform()
-  ot_result <- httr2::resp_body_json(ot_response)
-  rows <- ot_result$data$target$associatedDiseases$rows
-  matches <- Filter(function(r) {
-    any(sapply(search_terms, function(term) grepl(term, r$disease$name, ignore.case = TRUE)))
-  }, rows)
-  if (length(matches) > 0) {
-    assoc_score <- round(matches[[1]]$score, 3)
-    assoc_disease <- matches[[1]]$disease$name
-    cat("Association score:", assoc_score, "\n")
-    cat("Matched disease:", assoc_disease, "\n")
-  } else {
-    cat("No direct association found for '", site, "' in top results\n")
+  ot_result <- tryCatch({
+    ot_response <- httr2::request("https://api.platform.opentargets.org/api/v4/graphql") |>
+      httr2::req_body_json(list(query = query)) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
+    httr2::resp_body_json(ot_response)
+  }, error = function(e) NULL)
+
+  if (!is.null(ot_result)) {
+    rows <- ot_result$data$target$associatedDiseases$rows
+    matches <- Filter(function(r) {
+      any(sapply(search_terms, function(term) grepl(term, r$disease$name, ignore.case = TRUE)))
+    }, rows)
+    if (length(matches) > 0) {
+      assoc_score <- round(matches[[1]]$score, 3)
+      assoc_disease <- matches[[1]]$disease$name
+      cat("Association score:", assoc_score, "\n")
+      cat("Matched disease:", assoc_disease, "\n")
+    } else {
+      cat("No direct association found for '", site, "' in top results\n")
+    }
   }
 
   # PubMed context count
   pubmed_context <- NULL
   tryCatch({
     context_url <- paste0("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=", gene, "+", site, "&retmode=json&retmax=0")
-    context_resp <- httr2::request(context_url) |> httr2::req_perform()
+    context_resp <- httr2::request(context_url) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
     pubmed_context <- as.integer(httr2::resp_body_json(context_resp)$esearchresult$count)
     cat("PubMed publications in context of", site, ":", format(pubmed_context, big.mark = ","), "\n")
   }, error = function(e) NULL)
@@ -450,10 +487,14 @@ findr_context_only <- function(gene, site) {
   total_samples <- NULL
   tryCatch({
     sample_url <- paste0("https://www.cbioportal.org/api/sample-lists/", tcga_study, "_all")
-    sample_resp <- httr2::request(sample_url) |> httr2::req_perform()
+    sample_resp <- httr2::request(sample_url) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
     total_samples <- httr2::resp_body_json(sample_resp)$sampleCount
     mut_url <- paste0("https://www.cbioportal.org/api/molecular-profiles/", tcga_study, "_mutations/mutations?sampleListId=", tcga_study, "_all&entrezGeneId=", entrez_id, "&pageSize=10000")
-    mut_resp <- httr2::request(mut_url) |> httr2::req_perform()
+    mut_resp <- httr2::request(mut_url) |>
+      httr2::req_timeout(30) |>
+      httr2::req_perform()
     mut_count <- length(httr2::resp_body_json(mut_resp))
     mut_frequency <- round(mut_count / total_samples * 100, 1)
   }, error = function(e) NULL)
