@@ -1,2 +1,4 @@
 ^genefindr\.Rproj$
 ^\.Rproj\.user$
+^CRAN-SUBMISSION$
+^cran-comments\.md$
