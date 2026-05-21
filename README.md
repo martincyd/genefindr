@@ -42,31 +42,43 @@ findr("MALAT1", site = "lung")
 
 ## Example Output
 
+```
 ============================
 Gene: TP53
 Context: breast
+============================
 Name: tumor protein p53
 Type: protein-coding
 Molecular weight: 43,653 Da
 Subcellular location: Cytoplasm, Nucleus, PML body, Endoplasmic reticulum...
 Isoforms: 9 (p53, p53gamma, Del40-p53, Del40-p53beta...)
 Note: multiple isoforms detected — verify antibody targets correct isoform
+
 PubMed publications: 38,434 total | 4,636 in context of breast
+
 Summary: This gene encodes a tumor suppressor protein...
+
 --- Disease Association (Open Targets) ---
 Association score: 0.743
 Matched disease: Hereditary breast cancer
+
 --- Protein & Expression (Human Protein Atlas) ---
 Protein evidence: Evidence at protein level
 Antibody available: Yes
+
 --- Normal Expression (GTEx) ---
 Suggested positive control tissue: Skin Sun Exposed Lower leg (37 TPM)
+
 --- Tumor Mutation Frequency (cBioPortal/TCGA) ---
 Mutated in 32.6% of TCGA BREAST tumors (353/1084 samples, TCGA PanCancer Atlas 2018)
+
 --- Clinical Variants (ClinVar) ---
 Pathogenic: 1,734 | Benign: 1,962 | VUS: 2,252
+
 ============================
 Data sources: MyGene.info, Open Targets, Human Protein Atlas, UniProt, GTEx, cBioPortal, PubMed, ClinVar
+============================
+```
 
 ## Data Sources
 
