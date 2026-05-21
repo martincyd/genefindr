@@ -236,7 +236,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
   cat("Name:", hit$name, "\n")
   cat("Type:", hit$type_of_gene, "\n")
   if (!is.null(hit$type_of_gene) && hit$type_of_gene != "protein-coding") {
-    cat("Note: non-protein-coding gene — protein-based fields (molecular weight, antibody, isoforms) not applicable\n")
+    cat("Note: non-protein-coding gene -- protein-based fields (molecular weight, antibody, isoforms) not applicable\n")
   }
   if (!is.null(mol_weight)) cat("Molecular weight:", format(mol_weight, big.mark = ","), "Da\n")
   if (!is.null(subcell_loc)) cat("Subcellular location:", subcell_loc, "\n")
@@ -246,7 +246,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
     } else {
       cat("Isoforms:", isoform_count, "\n")
     }
-    if (isoform_count > 3) cat("Note: multiple isoforms detected — verify antibody targets correct isoform\n")
+    if (isoform_count > 3) cat("Note: multiple isoforms detected -- verify antibody targets correct isoform\n")
   }
   if (!is.null(pubmed_total)) {
     cat("\n")
@@ -321,7 +321,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
   if (!is.null(mut_frequency)) {
     cat("\n--- Tumor Mutation Frequency (cBioPortal/TCGA) ---\n")
     if (mut_frequency > 100) {
-      cat("Mutation count:", mut_count, "across", total_samples, "TCGA", toupper(site_clean), "tumors — exceeds 100% suggesting multiple mutations per sample (common in very large genes)\n")
+      cat("Mutation count:", mut_count, "across", total_samples, "TCGA", toupper(site_clean), "tumors -- exceeds 100% suggesting multiple mutations per sample (common in very large genes)\n")
     } else {
       cat("Mutated in", mut_frequency, "% of TCGA", toupper(site_clean), "tumors (", mut_count, "/", total_samples, "samples, TCGA PanCancer Atlas 2018)\n")
     }
