@@ -1,3 +1,15 @@
+#' Characterize a gene using public genomic databases
+#'
+#' @param gene Character. Gene symbol (e.g. "TP53")
+#' @param disease Character. Disease context (e.g. "alzheimer")
+#' @param site Character. Cancer site (e.g. "breast", "lung"). Can be a vector for multi-site comparison.
+#' @return Invisibly returns a data frame of results
+#' @export
+#' @examples
+#' \dontrun{
+#' findr("TP53", site = "breast")
+#' }
+
 findr <- function(gene, disease = NULL, site = NULL) {
 
   site_terms <- list(
@@ -326,6 +338,19 @@ findr <- function(gene, disease = NULL, site = NULL) {
     stringsAsFactors = FALSE
   ))
 }
+
+#' Characterize multiple genes using public genomic databases
+#'
+#' @param genes Character vector. Gene symbols (e.g. c("TP53", "BRCA1"))
+#' @param disease Character. Disease context
+#' @param site Character. Cancer site
+#' @param output Character. "print" or "table"
+#' @return Invisibly returns a data frame of results
+#' @export
+#' @examples
+#' \dontrun{
+#' findr_multi(c("TP53", "BRCA1"), site = "breast")
+#' }
 
 findr_multi <- function(genes, disease = NULL, site = NULL, output = "print") {
   results <- list()

@@ -2,5 +2,3 @@
 
 export(findr)
 export(findr_multi)
-export(findr_context_only)
-
