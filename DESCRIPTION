@@ -11,3 +11,5 @@ RoxygenNote: 8.0.0
 Imports:
     httr2,
     gtexr
+URL: https://github.com/martincyd/genefindr
+BugReports: https://github.com/martincyd/genefindr/issues
