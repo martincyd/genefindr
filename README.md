@@ -11,8 +11,11 @@ Characterizing a gene typically means manually searching GeneCards, then Open Ta
 ## Installation
 
 ```r
-# Install from GitHub (requires devtools)
-devtools::install_github("martincyd/genefindr")
+# Install from GitHub
+pak::pak("martincyd/genefindr")
+
+# Or install from local folder
+pak::pak("local::path/to/genefindr")
 ```
 
 ## Quick Start
