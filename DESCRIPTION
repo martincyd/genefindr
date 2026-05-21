@@ -3,7 +3,11 @@ Title: Rapid Gene Characterization Using Public Genomic Databases
 Version: 0.0.0.9000
 Authors@R: 
     person("Cydnie", "Martin", , "martincydenise@gmail.com", role = c("aut", "cre"))
-Description: A user-friendly interface for characterizing gene function by disease type and 		tissue site, integrating curated data from publicly available genomic and proteomic 		databases to support candidate gene prioritization in experimental workflows.
+Description: A user-friendly interface for characterizing gene function by
+    disease type and tissue site, integrating curated data from publicly
+    available genomic and proteomic databases to support candidate gene
+    prioritization in experimental workflows.
+Depends: R (>= 4.1.0)
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
