@@ -78,7 +78,9 @@ findr <- function(gene, disease = NULL, site = NULL) {
   url <- paste0("https://mygene.info/v3/query?q=", gene, "&fields=name,summary,type_of_gene,ensembl.gene,entrezgene,symbol&species=human")
 
   result <- tryCatch({
-    response <- httr2::request(url) |> httr2::req_perform()
+    response <- httr2::request(url) |>
+      httr2::req_timeout(15) |>
+      httr2::req_perform()
     httr2::resp_body_json(response)
   }, error = function(e) {
     cat("Error: Could not reach MyGene.info. Please check your internet connection.\n")
