@@ -17,3 +17,7 @@ Imports:
     gtexr
 URL: https://github.com/martincyd/genefindr
 BugReports: https://github.com/martincyd/genefindr/issues
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

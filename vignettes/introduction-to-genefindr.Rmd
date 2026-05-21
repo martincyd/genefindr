@@ -1,0 +1,88 @@
+---
+title: "Introduction to genefindr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to genefindr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Overview
+
+genefindr provides rapid gene characterization by querying eight public databases simultaneously. Instead of manually searching GeneCards, Open Targets, Human Protein Atlas, and PubMed separately, genefindr synthesizes all of this into a single function call.
+
+## Basic usage
+
+The main function is `findr()`. At minimum it requires a gene symbol:
+
+```{r eval=FALSE}
+library(genefindr)
+findr("TP53")
+```
+
+For disease-specific context, add a `site` or `disease` argument:
+
+```{r eval=FALSE}
+findr("TP53", site = "breast")
+findr("APOE", disease = "alzheimer")
+```
+
+## Supported cancer sites
+
+The `site` argument accepts the following values:
+`breast`, `prostate`, `lung`, `colon`, `ovarian`, `liver`, `brain`, `pancreatic`, `skin`, `blood`
+
+## Multiple genes
+
+Use `findr_multi()` to characterize several genes at once:
+
+```{r eval=FALSE}
+findr_multi(c("TP53", "BRCA1", "MYC"), site = "breast")
+```
+
+## Multi-site comparison
+
+Compare a gene across multiple cancer types:
+
+```{r eval=FALSE}
+findr("TP53", site = c("breast", "lung", "colon"))
+```
+
+## Exporting results
+
+Save results as a data frame or CSV:
+
+```{r eval=FALSE}
+results <- findr_multi(c("TP53", "BRCA1"), site = "breast", output = "table")
+write.csv(results, "candidates.csv")
+```
+
+## Non-coding RNAs
+
+genefindr also supports non-coding RNA genes. Protein-based fields are automatically skipped:
+
+```{r eval=FALSE}
+findr("MALAT1", site = "lung")
+```
+
+## Data sources
+
+genefindr integrates data from eight databases:
+
+| Database | Data provided |
+|----------|--------------|
+| MyGene.info | Gene name, type, summary |
+| Open Targets | Disease association scores |
+| Human Protein Atlas | Protein evidence, antibody availability |
+| UniProt | Molecular weight, subcellular location, isoforms |
+| GTEx | Normal tissue expression |
+| cBioPortal/TCGA | Tumor mutation frequency |
+| PubMed | Publication counts |
+| ClinVar | Clinical variant counts |
+
+## Notes
+
+- All data sources are free and open access
+- Results reflect the current state of each database at time of query
+- Mutation frequency data is sourced from TCGA PanCancer Atlas 2018
+- For genes with multiple isoforms, verify that your antibody targets the correct isoform
