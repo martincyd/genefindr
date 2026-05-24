@@ -100,6 +100,20 @@ Data sources: MyGene.info, Open Targets, Human Protein Atlas, UniProt, GTEx, cBi
 
 `breast`, `prostate`, `lung`, `colon`, `ovarian`, `liver`, `brain`, `pancreatic`, `skin`, `blood`
 
+## Note on gene symbols
+
+genefindr requires official HGNC gene symbols. Common aliases may return unexpected results:
+
+| Common name | Official symbol |
+|-------------|----------------|
+| HER2 | ERBB2 |
+| p53 | TP53 |
+| cMYC | MYC |
+| VEGF | VEGFA |
+| HER1 | EGFR |
+
+When in doubt, look up the official symbol at [genenames.org](https://www.genenames.org).
+
 ## Functions
 
 - `findr()` — characterize a single gene
