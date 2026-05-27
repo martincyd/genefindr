@@ -91,7 +91,7 @@ Data sources: MyGene.info, Open Targets, Human Protein Atlas, UniProt, GTEx, cBi
 | [Open Targets](https://www.opentargets.org) | Disease association scores |
 | [Human Protein Atlas](https://www.proteinatlas.org) | Protein evidence, antibody availability |
 | [UniProt](https://www.uniprot.org) | Molecular weight, subcellular location, isoforms |
-| [GTEx](https://gtexportal.org) | Normal tissue expression |
+| [GTEx](https://gtexportal.org/home/index.html) | Normal tissue expression |
 | [cBioPortal/TCGA](https://www.cbioportal.org) | Tumor mutation frequency |
 | [PubMed](https://pubmed.ncbi.nlm.nih.gov) | Publication counts |
 | [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar) | Clinical variant counts |
