@@ -6,10 +6,9 @@
 #' @return Invisibly returns a data frame of results
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' findr("TP53", site = "breast")
 #' }
-
 findr <- function(gene, disease = NULL, site = NULL) {
 
   site_terms <- list(
@@ -44,10 +43,10 @@ findr <- function(gene, disease = NULL, site = NULL) {
     first <- findr(gene, site = site[1])
     results[[site[1]]] <- first
     for (s in site[-1]) {
-      cat("\n--- Context:", s, "---\n")
+      message("\n--- Context:", s, "---\n")
       res <- findr_context_only(gene, site = s)
       results[[s]] <- res
-      cat("\n")
+      message("\n")
     }
     return(invisible(NULL))
   }
@@ -57,7 +56,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
     site_clean <- tolower(trimws(site))
     search_terms <- site_terms[[site_clean]]
     if (is.null(search_terms)) {
-      cat("Unknown site '", site, "'. Try: breast, prostate, lung, colon, ovarian, liver, brain, pancreatic, skin, blood\n")
+      message("Unknown site '", site, "'. Try: breast, prostate, lung, colon, ovarian, liver, brain, pancreatic, skin, blood\n")
       return(invisible(NULL))
     }
     context_label <- site
@@ -83,14 +82,14 @@ findr <- function(gene, disease = NULL, site = NULL) {
       httr2::req_perform()
     httr2::resp_body_json(response)
   }, error = function(e) {
-    cat("Error: Could not reach MyGene.info. Please check your internet connection.\n")
+    message("Error: Could not reach MyGene.info. Please check your internet connection.\n")
     return(NULL)
   })
 
   if (is.null(result)) return(invisible(NULL))
 
   if (is.null(result$hits) || length(result$hits) == 0) {
-    cat("Error: Gene '", gene, "' not found. Please check the gene symbol and try again.\n", sep="")
+    message("Error: Gene '", gene, "' not found. Please check the gene symbol and try again.\n", sep="")
     return(invisible(NULL))
   }
 
@@ -100,7 +99,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
   official_symbol <- hit$symbol
 
   if (!is.null(hit$type_of_gene) && hit$type_of_gene == "biological-region") {
-    cat("Warning: '", gene, "' returned a biological region, not a gene. Try the official gene symbol instead.\n", sep="")
+    message("Warning: '", gene, "' returned a biological region, not a gene. Try the official gene symbol instead.\n", sep="")
     return(invisible(NULL))
   }
 
@@ -229,39 +228,39 @@ findr <- function(gene, disease = NULL, site = NULL) {
   }, error = function(e) NULL)
 
   # print basic info
-  cat("============================\n")
-  cat("Gene:", toupper(gene), "\n")
-  if (!is.null(context_label)) cat("Context:", context_label, "\n")
-  cat("============================\n")
-  cat("Name:", hit$name, "\n")
-  cat("Type:", hit$type_of_gene, "\n")
+  message("============================\n")
+  message("Gene:", toupper(gene), "\n")
+  if (!is.null(context_label)) message("Context:", context_label, "\n")
+  message("============================\n")
+  message("Name:", hit$name, "\n")
+  message("Type:", hit$type_of_gene, "\n")
   if (!is.null(hit$type_of_gene) && hit$type_of_gene != "protein-coding") {
-    cat("Note: non-protein-coding gene -- protein-based fields (molecular weight, antibody, isoforms) not applicable\n")
+    message("Note: non-protein-coding gene -- protein-based fields (molecular weight, antibody, isoforms) not applicable\n")
   }
-  if (!is.null(mol_weight)) cat("Molecular weight:", format(mol_weight, big.mark = ","), "Da\n")
-  if (!is.null(subcell_loc)) cat("Subcellular location:", subcell_loc, "\n")
+  if (!is.null(mol_weight)) message("Molecular weight:", format(mol_weight, big.mark = ","), "Da\n")
+  if (!is.null(subcell_loc)) message("Subcellular location:", subcell_loc, "\n")
   if (!is.null(isoform_count)) {
     if (length(isoform_names) > 0) {
-      cat("Isoforms:", isoform_count, "(", paste(isoform_names, collapse = ", "), ")\n")
+      message("Isoforms:", isoform_count, "(", paste(isoform_names, collapse = ", "), ")\n")
     } else {
-      cat("Isoforms:", isoform_count, "\n")
+      message("Isoforms:", isoform_count, "\n")
     }
-    if (isoform_count > 3) cat("Note: multiple isoforms detected -- verify antibody targets correct isoform\n")
+    if (isoform_count > 3) message("Note: multiple isoforms detected -- verify antibody targets correct isoform\n")
   }
   if (!is.null(pubmed_total)) {
-    cat("\n")
-    cat("PubMed publications:", format(pubmed_total, big.mark = ","), "total")
-    if (!is.null(pubmed_context)) cat(" |", format(pubmed_context, big.mark = ","), "in context of", context_label)
-    cat("\n")
+    message("\n")
+    message("PubMed publications:", format(pubmed_total, big.mark = ","), "total")
+    if (!is.null(pubmed_context)) message(" |", format(pubmed_context, big.mark = ","), "in context of", context_label)
+    message("\n")
   }
-  cat("\n")
-  cat("Summary:", hit$summary, "\n")
+  message("\n")
+  message("Summary:", hit$summary, "\n")
 
   # disease association
   assoc_score <- NULL
   assoc_disease <- NULL
   if (!is.null(search_terms)) {
-    cat("\n--- Disease Association (Open Targets) ---\n")
+    message("\n--- Disease Association (Open Targets) ---\n")
     query <- paste0('{
       target(ensemblId: "', ensembl_id, '") {
         associatedDiseases {
@@ -285,59 +284,59 @@ findr <- function(gene, disease = NULL, site = NULL) {
       if (length(matches) > 0) {
         assoc_score <- round(matches[[1]]$score, 3)
         assoc_disease <- matches[[1]]$disease$name
-        cat("Association score:", assoc_score, "\n")
-        cat("Matched disease:", assoc_disease, "\n")
+        message("Association score:", assoc_score, "\n")
+        message("Matched disease:", assoc_disease, "\n")
       } else {
-        cat("No direct association found for '", context_label, "' in top results\n")
+        message("No direct association found for '", context_label, "' in top results\n")
       }
     } else {
-      cat("Open Targets data not available\n")
+      message("Open Targets data not available\n")
     }
   }
 
   # HPA output
-  cat("\n--- Protein & Expression (Human Protein Atlas) ---\n")
+  message("\n--- Protein & Expression (Human Protein Atlas) ---\n")
   protein_evidence <- NULL
   antibody_available <- FALSE
   if (!is.null(hpa)) {
     protein_evidence <- hpa$Evidence
     antibody <- hpa$Antibody
     antibody_available <- length(antibody) > 0 && any(antibody != "")
-    cat("Protein evidence:", protein_evidence, "\n")
-    cat("Antibody available:", ifelse(antibody_available, "Yes", "No"), "\n")
+    message("Protein evidence:", protein_evidence, "\n")
+    message("Antibody available:", ifelse(antibody_available, "Yes", "No"), "\n")
   } else {
-    cat("No Human Protein Atlas data found\n")
+    message("No Human Protein Atlas data found\n")
   }
 
   # GTEx output
-  cat("\n--- Normal Expression (GTEx) ---\n")
+  message("\n--- Normal Expression (GTEx) ---\n")
   if (!is.null(gtex_top_tissue)) {
-    cat("Suggested positive control tissue:", gtex_top_tissue, "(", gtex_top_tpm, "TPM)\n")
+    message("Suggested positive control tissue:", gtex_top_tissue, "(", gtex_top_tpm, "TPM)\n")
   } else {
-    cat("GTEx data not available\n")
+    message("GTEx data not available\n")
   }
 
   # cBioPortal output
   if (!is.null(mut_frequency)) {
-    cat("\n--- Tumor Mutation Frequency (cBioPortal/TCGA) ---\n")
+    message("\n--- Tumor Mutation Frequency (cBioPortal/TCGA) ---\n")
     if (mut_frequency > 100) {
-      cat("Mutation count:", mut_count, "across", total_samples, "TCGA", toupper(site_clean), "tumors -- exceeds 100% suggesting multiple mutations per sample (common in very large genes)\n")
+      message("Mutation count:", mut_count, "across", total_samples, "TCGA", toupper(site_clean), "tumors -- exceeds 100% suggesting multiple mutations per sample (common in very large genes)\n")
     } else {
-      cat("Mutated in", mut_frequency, "% of TCGA", toupper(site_clean), "tumors (", mut_count, "/", total_samples, "samples, TCGA PanCancer Atlas 2018)\n")
+      message("Mutated in", mut_frequency, "% of TCGA", toupper(site_clean), "tumors (", mut_count, "/", total_samples, "samples, TCGA PanCancer Atlas 2018)\n")
     }
   }
 
   # ClinVar output
   if (!is.null(clinvar_pathogenic)) {
-    cat("\n--- Clinical Variants (ClinVar) ---\n")
-    cat("Pathogenic:", format(clinvar_pathogenic, big.mark = ","),
+    message("\n--- Clinical Variants (ClinVar) ---\n")
+    message("Pathogenic:", format(clinvar_pathogenic, big.mark = ","),
         "| Benign:", format(clinvar_benign, big.mark = ","),
         "| VUS:", format(clinvar_vus, big.mark = ","), "\n")
   }
 
-  cat("\n============================\n")
-  cat("Data sources: MyGene.info, Open Targets, Human Protein Atlas, UniProt, GTEx, cBioPortal, PubMed, ClinVar\n")
-  cat("============================\n")
+  message("\n============================\n")
+  message("Data sources: MyGene.info, Open Targets, Human Protein Atlas, UniProt, GTEx, cBioPortal, PubMed, ClinVar\n")
+  message("============================\n")
 
   invisible(data.frame(
     gene = toupper(gene),
@@ -373,7 +372,7 @@ findr <- function(gene, disease = NULL, site = NULL) {
 #' @return Invisibly returns a data frame of results
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' findr_multi(c("TP53", "BRCA1"), site = "breast")
 #' }
 findr_multi <- function(genes, disease = NULL, site = NULL, output = "print") {
@@ -381,7 +380,7 @@ findr_multi <- function(genes, disease = NULL, site = NULL, output = "print") {
   for (gene in genes) {
     result <- findr(gene, disease = disease, site = site)
     results[[gene]] <- result
-    cat("\n")
+    message("\n")
   }
   if (output == "table") {
     return(do.call(rbind, results))
@@ -439,7 +438,7 @@ findr_context_only <- function(gene, site) {
   # Open Targets
   assoc_score <- NULL
   assoc_disease <- NULL
-  cat("\n--- Disease Association (Open Targets) ---\n")
+  message("\n--- Disease Association (Open Targets) ---\n")
   query <- paste0('{
       target(ensemblId: "', ensembl_id, '") {
         associatedDiseases {
@@ -463,10 +462,10 @@ findr_context_only <- function(gene, site) {
     if (length(matches) > 0) {
       assoc_score <- round(matches[[1]]$score, 3)
       assoc_disease <- matches[[1]]$disease$name
-      cat("Association score:", assoc_score, "\n")
-      cat("Matched disease:", assoc_disease, "\n")
+      message("Association score:", assoc_score, "\n")
+      message("Matched disease:", assoc_disease, "\n")
     } else {
-      cat("No direct association found for '", site, "' in top results\n")
+      message("No direct association found for '", site, "' in top results\n")
     }
   }
 
@@ -478,7 +477,7 @@ findr_context_only <- function(gene, site) {
       httr2::req_timeout(15) |>
       httr2::req_perform()
     pubmed_context <- as.integer(httr2::resp_body_json(context_resp)$esearchresult$count)
-    cat("PubMed publications in context of", site, ":", format(pubmed_context, big.mark = ","), "\n")
+    message("PubMed publications in context of", site, ":", format(pubmed_context, big.mark = ","), "\n")
   }, error = function(e) NULL)
 
   # cBioPortal
@@ -500,8 +499,8 @@ findr_context_only <- function(gene, site) {
   }, error = function(e) NULL)
 
   if (!is.null(mut_frequency)) {
-    cat("\n--- Tumor Mutation Frequency (cBioPortal/TCGA) ---\n")
-    cat("Mutated in", mut_frequency, "% of TCGA", toupper(site_clean), "tumors (", mut_count, "/", total_samples, "samples, TCGA PanCancer Atlas 2018)\n")
+    message("\n--- Tumor Mutation Frequency (cBioPortal/TCGA) ---\n")
+    message("Mutated in", mut_frequency, "% of TCGA", toupper(site_clean), "tumors (", mut_count, "/", total_samples, "samples, TCGA PanCancer Atlas 2018)\n")
   }
 
   invisible(data.frame(

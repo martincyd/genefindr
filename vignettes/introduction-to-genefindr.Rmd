@@ -11,6 +11,20 @@ vignette: >
 
 genefindr provides rapid gene characterization by querying eight public databases simultaneously. Instead of manually searching GeneCards, Open Targets, Human Protein Atlas, and PubMed separately, genefindr synthesizes all of this into a single function call.
 
+## A simple example
+
+Here we demonstrate basic package functionality by checking if the package loads correctly and that the main functions are available:
+
+```{r}
+library(genefindr)
+
+# Check that functions are available
+is.function(findr)
+is.function(findr_multi)
+```
+
+The main functions require internet access to query external databases. The following examples show typical usage but are not automatically executed:
+
 ## Basic usage
 
 The main function is `findr()`. At minimum it requires a gene symbol:

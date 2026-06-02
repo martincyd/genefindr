@@ -22,4 +22,3 @@ Suggests:
     rmarkdown,
     spelling
 VignetteBuilder: knitr
-Language: en-US
