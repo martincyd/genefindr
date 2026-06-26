@@ -14,7 +14,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Imports:
     httr2,
-    gtexr
+    gtexr,
+    ggplot2
 URL: https://github.com/martincyd/genefindr
 BugReports: https://github.com/martincyd/genefindr/issues
 Suggests: 

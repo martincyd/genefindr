@@ -22,7 +22,7 @@ Invisibly returns a data frame of results
 Characterize multiple genes using public genomic databases
 }
 \examples{
-\dontrun{
+\donttest{
 findr_multi(c("TP53", "BRCA1"), site = "breast")
 }
 }

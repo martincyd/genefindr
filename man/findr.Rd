@@ -20,7 +20,7 @@ Invisibly returns a data frame of results
 Characterize a gene using public genomic databases
 }
 \examples{
-\dontrun{
+\donttest{
 findr("TP53", site = "breast")
 }
 }
